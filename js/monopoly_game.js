@@ -1,7 +1,7 @@
 var deedNames = ["mediterranean", "baltic", "reading railroad", "oriental", "vermont", "connecticut", 
                 "st. charles", "electric company", "states", "virginia", "pennsylvania railroad", "st. james", "tennessee", "new york", 
-                "kentucky", "indiana", "illinois", "B&O railroad", "atlantic", "ventnor", "water works", "marvin", 
-                "pacific", "north carolina", "pennsylvania", "short line railroad", "park place", "boardwalk"];
+                "kentucky", "indiana", "illinois", "Body Odor railroad", "atlantic", "ventnor", "water works", "marvin", 
+                "pacific", "north cackalackey", "pennsylvania", "short line railroad", "park place", "boardwalk"];
 
 var deedPrices = [60,60,200,100,100,120,
             140,175,140,160,200,180,180,200,
@@ -45,7 +45,7 @@ function PayLuxuryTax() {
     console.error("Not Implemented");
 }
 
-var tokens = ['car','iron','ship', 'wheelbarrow'];
+var tokens = ['car','iron','ship', 'wheelbarrow','thimble','cannon','train','horse','hat','shoe','dog'];
 
 var activePlayer = null;
 
@@ -98,14 +98,17 @@ var SpecialAction = {
     },
     goToJail : function() {
         if(activePlayer != null) {
+            console.log('GO TO JAIL!')
             activePlayer.currentlocation = 10;
             activePlayer.inJail = true;
             activePlayer.jailRollCount = 1;
+            activePlayer.doublesCount = 0;
         }
     },
     payToGetOutOfJail : function () {
         if(activePlayer != null) {
             activePlayer.cash -= 50;
+            console.log('Just visiting.');
         }
     },
     bankrupt : function () {
@@ -115,7 +118,15 @@ var SpecialAction = {
         // todo
         console.error("Not Implemented");
     },
+    streetRepairs : function () {
+        // todo
+        console.error("Not Implemented");
+    },
     payEachPlayer50 : function () {
+        // todo
+        console.error("Not Implemented");
+    },
+    collect50FromEveryPlayer : function () {
         // todo
         console.error("Not Implemented");
     }
@@ -140,8 +151,23 @@ var chanceDeck = [new Card('Advance to "Go", collect $200',200,0,0,false,null),
                   new Card('Take A Walk On The Board Walk.  Advance Token To Board Walk',0,0,40,false,null),
                   new Card('Take A Ride On The Reading.  If You Pass Go, Collect $200',200,0,5,false,null),
                   new Card('Pay Poor Tax Of $15',0,15,null,false,null)];
-                  
-var communityDeck = [];
+
+var communityDeck = [new Card('Pay School Tax of $150',0,150,null,false,null),
+                     new Card('Receive for services $25',25,0,null,false,null),
+                     new Card('Advance to "Go", collect $200',200,0,0,false,null),
+                     new Card('You are assesed for street repairs $40 per house, $115 per hotel',0,0,null,false,SpecialAction.streetRepairs()),
+                     new Card('Life Insurance Matures, Collect $100',100,0,null,false,null),
+                     new Card('Income Tax Refund, collect $20',20,0,null,false,null),
+                     new Card("Doctor's Fee, Pay $50",0,50,null,false,null),
+                     new Card('From sale of stock collect $45',45,0,null,false,null),
+                     new Card('You won SECOND PRIZE! HA HA HA HA HA! COLLECT ten whole dollars',10,0,null,false,null),
+                     new Card('You inherit $100',100,0,null,false,null),
+                     new Card('Jesus Birthday, collect $100  Thanks baby Jesus!',100,0,null,false,null),
+                     new Card('Twin Babies!  Hooray! Pay hospital $50 per baby (that is $100 total).',0,100,null,false,null),
+                     new Card('Grand Opera Opening collect $50 from every player for opening night seats',0,0,null,false,SpecialAction.collect50FromEveryPlayer()),
+                     new Card('Get out of Jail Free. This card may be kept until needed, or traded/sold.',0,0,null,false,null),
+                     new Card('Bank error in your favor collect $200',200,0,null,false,null),
+                     new Card('Go to Jail. Go directly to Jail. Do not pass Go, do not collect $200.',0,0,10,false,SpecialAction.goToJail())];
 
 
 function roll2Dice(player) {
@@ -151,7 +177,13 @@ function roll2Dice(player) {
     d2 = Math.ceil(Math.random() * 6);
     if(d1 === d2) {
         player.rolledDoubles = true;
-        console.log(player.piece + ' rolled doubles ' + d1 + " "+ d2);
+        if(d1 == 1) {
+            console.log('SNAKE EYES! One-Two!');
+        } else if(d1 == 6) {
+            console.log('BOXCARS!');
+        } else {
+            console.log(player.piece + ' rolled doubles ' + d1 + " "+ d2);
+        }
     }
     return d1 + d2;
 }
@@ -163,9 +195,10 @@ function Player(piece, playerNumber) {
     this.deeds = [];
     this.currentlocation = 0;
     this.rolledDoubles = false;
+    this.doublesCount = 0;
     this.move = function (roll) {
         this.currentlocation += roll;
-		if(this.currentlocation >= 40) {
+		if(this.currentlocation > 40) {
             this.currentlocation %= 40;
             SpecialAction.passedGo(this);
         }
@@ -185,9 +218,9 @@ function Player(piece, playerNumber) {
             if(theDeed.hasOwnProperty('GetRentDue')) {
                 var theRent = theDeed.GetRentDue();
                 this.cash -= theRent;
-                console.log(this.piece + ' paid ' + theRent);
+                console.log(this.piece + ' paid $' + theRent + ' and now has $' + this.cash);
                 theDeed.owner.cash += theRent;
-                console.log(theDeed.owner.piece + ' now has ' + theDeed.owner.cash)
+                console.log(theDeed.owner.piece + ' now has $' + theDeed.owner.cash)
             } else {
                 // check for special action
             }
@@ -214,6 +247,7 @@ function Deed(ID) {
     this.level = 0;
     this.totalDeedsInGroup = deedsRequiredForMonopoly[ID];
     this.monopoly = false;
+    this.mortgaged = false;
     this.GetRentDue = function () {
         if(this.monopoly && this.level == 0) {
             return deedRents[this.ID][this.level] * 2;
@@ -246,9 +280,9 @@ function playerManager(numberOfPlayers) {
     }
 }
 
-function Test(turns, players)  {
+function SimulationLoop(turns, players)  {
     chanceCards = shuffle(chanceDeck);
-    playerManager = new playerManager(players);
+    playerManager = new playerManager( Math.min(players,11) );
     DeedDeck();
     CreateMonopolyBoard();
 
@@ -257,17 +291,36 @@ function Test(turns, players)  {
     for(var i = 0; i < turns; i++) {
         for(var j = 0; j < players; j++) {
             activePlayer = playerManager.players[j];
+            
             let dieRoll = roll2Dice(activePlayer);
             activePlayer.move(dieRoll);
+            
             console.log('The ' + activePlayer.piece + ' rolled ' + dieRoll + ' and landed on ' 
                         + monopolyboard[activePlayer.currentlocation].name);
+            
+            // This code should be moved to a Special Action
             if(activePlayer.currentlocation == 30) {
                 console.log('Player ' + (j + 1) + ' went to jail!');
                 SpecialAction.goToJail(activePlayer);
                 SpecialAction.payToGetOutOfJail(activePlayer);
                 break;
             }
+
             activePlayer.buyIfUnowned();
+            
+            if(activePlayer.rolledDoubles) {
+                activePlayer.doublesCount++;
+                if(activePlayer.doublesCount == 3) {
+                    console.log(activePlayer.piece + ' rolled doubles three times!');
+                    SpecialAction.goToJail(activePlayer);
+                    SpecialAction.payToGetOutOfJail(activePlayer);
+                    break;
+                }
+                j--;
+                console.log(activePlayer.piece + ' roll again!');
+            } else {
+                activePlayer.doublesCount = 0;
+            }
         }
     }
 
@@ -299,4 +352,4 @@ function shuffle(array) {
 
 var playerManager, chanceCards, communityChestCards, deeds = [];
 
-Test(35,4);
+SimulationLoop(35,4);
