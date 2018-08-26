@@ -56,8 +56,8 @@ function CreateMonopolyBoard() {
                 deeds[11], actionSpace[1], deeds[12], deeds[13], actionSpace[5],
                 deeds[14], actionSpace[2], deeds[15], deeds[16], deeds[17],
                 deeds[18], deeds[19], deeds[20], deeds[21],actionSpace[6],
-                deeds[22], deeds[23], actionSpace[1], deeds[24], actionSpace[1],
-                deeds[25], actionSpace[2], deeds[26],actionSpace[7], deeds[27]];
+                deeds[22], deeds[23], actionSpace[1], deeds[24], deeds[25], 
+                actionSpace[2], deeds[26],actionSpace[7], deeds[27]];
 }
 
 function ActionSpace(name, callback) {
@@ -198,7 +198,7 @@ function Player(piece, playerNumber) {
     this.doublesCount = 0;
     this.move = function (roll) {
         this.currentlocation += roll;
-		if(this.currentlocation > 40) {
+		if(this.currentlocation >= 40) {
             this.currentlocation %= 40;
             SpecialAction.passedGo(this);
         }
@@ -206,6 +206,9 @@ function Player(piece, playerNumber) {
     this.inJail = false;
     this.jailRollCount = 0;
     this.getOutOfJailFreeCard = false;
+    this.logPlayerMessage = function (message) {
+        console.log(this.piece + ' ' + message);
+    },
     this.buyIfUnowned = function () {
         var space = this.currentlocation;
         var theDeed = monopolyboard[space];
@@ -311,15 +314,18 @@ function SimulationLoop(turns, players)  {
             if(activePlayer.rolledDoubles) {
                 activePlayer.doublesCount++;
                 if(activePlayer.doublesCount == 3) {
-                    console.log(activePlayer.piece + ' rolled doubles three times!');
+                    activePlayer.logPlayerMessage('rolled doubles three times!');
                     SpecialAction.goToJail(activePlayer);
+                    activePlayer.logPlayerMessage('went to jail.');
                     SpecialAction.payToGetOutOfJail(activePlayer);
+                    activePlayer.logPlayerMessage('paid to get out of jail.');
                     break;
                 }
                 j--;
                 console.log(activePlayer.piece + ' roll again!');
             } else {
                 activePlayer.doublesCount = 0;
+                activePlayer.logPlayerMessage("'s doubles count reset to zero.");
             }
         }
     }
